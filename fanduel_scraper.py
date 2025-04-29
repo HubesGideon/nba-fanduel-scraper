@@ -1,53 +1,42 @@
 from playwright.sync_api import sync_playwright
+import time
 
 def scrape_fanduel_nba_points():
-    print("Navigating to Fanduel NBA page...")
     with sync_playwright() as p:
-        browser = p.chromium.launch(
-            headless=True,
-            args=[
-                "--no-sandbox",
-                "--disable-dev-shm-usage",
-                "--disable-gpu",
-                "--disable-software-rasterizer",
-                "--disable-extensions",
-                "--disable-setuid-sandbox",
-                "--disable-infobars",
-                "--remote-debugging-port=9222",
-                "--single-process",
-                "--disable-background-networking",
-                "--disable-background-timer-throttling",
-                "--disable-client-side-phishing-detection",
-                "--disable-default-apps",
-                "--disable-hang-monitor",
-                "--disable-popup-blocking",
-                "--disable-prompt-on-repost",
-                "--metrics-recording-only",
-                "--no-first-run",
-                "--safebrowsing-disable-auto-update"
-            ]
-        )
+        print("Launching browser...")
+        browser = p.chromium.launch(headless=True, args=["--disable-blink-features=AutomationControlled", "--no-sandbox", "--disable-setuid-sandbox"])
         context = browser.new_context()
         page = context.new_page()
-        
+
+        print("Navigating to Fanduel NBA page...")
+        page.goto("https://sportsbook.fanduel.com/navigation/nba")
+        page.wait_for_load_state("networkidle")
+
         try:
-            page.goto("https://sportsbook.fanduel.com/navigation/nba", timeout=60000)
-            print("Successfully navigated to page.")
-            
-            # Example locator usage, can be updated depending on what is needed
-            page.wait_for_selector("text=Player Points", timeout=10000)
-            print("Player Points tab found.")
-            
-            props = page.query_selector_all("selector-for-props")  # <-- Replace with correct selector
-            print(f"Found {len(props)} props.")
-            
+            print("Waiting for Player Points tab to be visible...")
+            player_points_tab = page.locator("text=Player Points").first
+            player_points_tab.wait_for(state="visible", timeout=10000)
+            print("Clicking Player Points tab...")
+            player_points_tab.click()
+
+            print("Waiting for props to load...")
+            page.wait_for_selector("div[data-testid='selection-card']", timeout=10000)
+
+            print("Scraping props...")
+            props = page.query_selector_all("div[data-testid='selection-card']")
             for prop in props:
-                print(prop.inner_text())
+                try:
+                    player_name = prop.query_selector("div[class*='event-cell__name']").inner_text()
+                    prop_value = prop.query_selector("span[class*='outcome-price']").inner_text()
+                    print(f"{player_name}: {prop_value}")
+                except Exception as e:
+                    print(f"Error extracting a prop: {e}")
 
         except Exception as e:
             print(f"Error scraping: {e}")
 
         finally:
+            print("Closing browser...")
             browser.close()
 
 if __name__ == "__main__":
