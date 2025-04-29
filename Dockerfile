@@ -5,15 +5,17 @@ FROM python:3.11-slim
 RUN apt-get update && apt-get install -y \
     wget gnupg ca-certificates curl fonts-liberation libasound2 libatk-bridge2.0-0 libatk1.0-0 libcups2 \
     libdbus-1-3 libgdk-pixbuf2.0-0 libx11-xcb1 libxcomposite1 libxdamage1 libxrandr2 \
-    libgbm1 libnss3 libpango-1.0-0 libpangocairo-1.0-0 libxss1 libxtst6 fonts-noto-color-emoji
+    libgbm1 libnss3 libpango-1.0-0 libpangocairo-1.0-0 libxss1 libxtst6 fonts-noto-color-emoji \
+    libxfixes3 libxkbcommon0  # ✅ <--- NEW required libraries
 
 # Install Python packages
 RUN pip install --upgrade pip
 COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 
-# 📢 📢 ADD THIS LINE TO INSTALL CHROMIUM
-RUN playwright install chromium
+# 📢 ADD THESE TWO LINES
+RUN playwright install
+RUN playwright install-deps  # ✅ <- THIS FIXES THE CURRENT ERROR
 
 # Copy app files
 COPY . .
