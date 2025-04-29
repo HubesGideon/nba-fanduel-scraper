@@ -7,47 +7,43 @@ def scrape_fanduel_nba_points():
         
         # Go to FanDuel NBA page
         page.goto("https://sportsbook.fanduel.com/navigation/nba")
-        page.wait_for_timeout(10000)  # Wait for page to load
+        page.wait_for_timeout(12000)  # wait 12 seconds for full load
         
-        # Expand the NBA player points section
         try:
-            # This selector finds the 'Player Points' market tab and clicks it
-            page.locator("text=Player Points").first.click()
-            page.wait_for_timeout(5000)  # Wait for props to load
+            # Click on 'Popular' tab if necessary (sometimes props are under it)
+            popular_tab = page.locator("text=Popular").first
+            if popular_tab.is_visible():
+                popular_tab.click()
+                page.wait_for_timeout(5000)
+            
+            # Click on "Player Points" market
+            player_points_tab = page.locator("text=Player Points").first
+            if player_points_tab.is_visible():
+                player_points_tab.click()
+                page.wait_for_timeout(5000)
+            else:
+                print("Player Points tab not found.")
         except Exception as e:
-            print(f"Could not find or click 'Player Points' section: {e}")
+            print(f"Error navigating to Player Points: {e}")
         
-        # Now grab all player props
+        # Now scrape player props
         player_props = []
         
         try:
-            player_cards = page.query_selector_all("div.event-cell__name-text")  # player names
-            odds_blocks = page.query_selector_all("div.market-outcome")  # odds info
+            player_cards = page.query_selector_all("div.event-cell__name-text")
+            odds_blocks = page.query_selector_all("div.market-outcome")
             
             for i in range(min(len(player_cards), len(odds_blocks) // 2)):
                 player_name = player_cards[i].inner_text()
-                
-                # Each player has two outcomes: Over and Under
                 over_block = odds_blocks[2 * i]
                 under_block = odds_blocks[2 * i + 1]
                 
                 over_text = over_block.inner_text().split("\n")
                 under_text = under_block.inner_text().split("\n")
                 
-                try:
-                    line = float(over_text[0])  # e.g., 26.5 points
-                except:
-                    line = None  # if parsing fails
-                
-                try:
-                    over_odds = int(over_text[1].replace("−", "-"))  # Handle minus signs
-                except:
-                    over_odds = None
-                
-                try:
-                    under_odds = int(under_text[1].replace("−", "-"))
-                except:
-                    under_odds = None
+                line = float(over_text[0]) if over_text else None
+                over_odds = int(over_text[1].replace("−", "-")) if len(over_text) > 1 else None
+                under_odds = int(under_text[1].replace("−", "-")) if len(under_text) > 1 else None
                 
                 player_props.append({
                     "player_name": player_name,
@@ -59,7 +55,7 @@ def scrape_fanduel_nba_points():
         except Exception as e:
             print(f"Error scraping props: {e}")
         
-        # Print out the results
+        # Print out the scraped player props
         for prop in player_props:
             print(prop)
         
