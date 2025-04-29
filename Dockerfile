@@ -12,6 +12,9 @@ RUN pip install --upgrade pip
 COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 
+# 📢 📢 ADD THIS LINE TO INSTALL CHROMIUM
+RUN playwright install chromium
+
 # Copy app files
 COPY . .
 
