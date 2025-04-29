@@ -4,27 +4,39 @@ def scrape_fanduel_nba_points():
     with sync_playwright() as p:
         browser = p.chromium.launch(
             headless=True,
-            args=["--no-sandbox", "--disable-dev-shm-usage"]
+            args=[
+                "--no-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-gpu",
+                "--disable-software-rasterizer",
+                "--disable-extensions",
+                "--disable-setuid-sandbox",
+                "--disable-infobars",
+                "--remote-debugging-port=9222"
+            ]
         )
         page = browser.new_page()
 
         try:
-            page.goto("https://sportsbook.fanduel.com/navigation/nba")
-            page.wait_for_load_state("networkidle")  # wait until network is idle
+            print("Navigating to Fanduel NBA page...")
+            page.goto("https://sportsbook.fanduel.com/navigation/nba", timeout=60000)
+            page.wait_for_load_state("networkidle")
 
-            player_points_tab = page.locator("text=Player Points").first  # <-- fixed
+            print("Looking for 'Player Points' tab...")
+            player_points_tab = page.locator("text=Player Points").first
+
             if player_points_tab.is_visible(timeout=10000):
-                print("Player Points tab is visible!")
+                print("Found Player Points tab, clicking...")
                 player_points_tab.click()
-                
-                page.wait_for_load_state("networkidle")  # optional, wait after clicking
+                page.wait_for_load_state("networkidle")
 
-                # Now scrape whatever you need (example selector, change it for your props)
-                props = page.query_selector_all(".your-prop-class")  # <-- you will need real CSS class here
+                # Example scraping after click (you'll adjust this later)
+                props = page.query_selector_all(".your-prop-class")
                 for prop in props:
                     print(prop.inner_text())
+
             else:
-                print("Player Points tab not found after loading.")
+                print("Player Points tab not found.")
 
         except Exception as e:
             print(f"Error scraping: {e}")
