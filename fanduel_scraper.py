@@ -2,42 +2,44 @@ from playwright.sync_api import sync_playwright
 import time
 
 def scrape_fanduel_nba_points():
+    print("Launching browser...")
     with sync_playwright() as p:
-        print("Launching browser...")
-        browser = p.chromium.launch(headless=True, args=["--disable-blink-features=AutomationControlled", "--no-sandbox", "--disable-setuid-sandbox"])
+        browser = p.chromium.launch(
+            headless=True,
+            args=["--disable-gpu", "--no-sandbox", "--disable-dev-shm-usage"]
+        )
         context = browser.new_context()
         page = context.new_page()
 
         print("Navigating to Fanduel NBA page...")
-        page.goto("https://sportsbook.fanduel.com/navigation/nba")
-        page.wait_for_load_state("networkidle")
+        try:
+            page.goto("https://sportsbook.fanduel.com/navigation/nba")
+            page.wait_for_load_state("networkidle")
+            print("Successfully navigated to page.")
+        except Exception as e:
+            print(f"Error navigating to page: {e}")
+            browser.close()
+            return
 
         try:
-            print("Waiting for Player Points tab to be visible...")
-            player_points_tab = page.locator("text=Player Points").first
-            player_points_tab.wait_for(state="visible", timeout=10000)
-            print("Clicking Player Points tab...")
-            player_points_tab.click()
-
-            print("Waiting for props to load...")
-            page.wait_for_selector("div[data-testid='selection-card']", timeout=10000)
-
-            print("Scraping props...")
-            props = page.query_selector_all("div[data-testid='selection-card']")
-            for prop in props:
-                try:
-                    player_name = prop.query_selector("div[class*='event-cell__name']").inner_text()
-                    prop_value = prop.query_selector("span[class*='outcome-price']").inner_text()
-                    print(f"{player_name}: {prop_value}")
-                except Exception as e:
-                    print(f"Error extracting a prop: {e}")
-
+            # Wait for "Player Points" tab
+            page.locator('text=Player Points').first.wait_for(timeout=10000)
+            page.locator('text=Player Points').first.click()
+            print("Clicked on Player Points tab.")
         except Exception as e:
-            print(f"Error scraping: {e}")
-
-        finally:
-            print("Closing browser...")
+            print(f"Error clicking Player Points: {e}")
             browser.close()
+            return
+
+        try:
+            # Example scraping: grabbing all player props under Player Points
+            props = page.locator(".event-cell__name-text").all_text_contents()
+            for prop in props:
+                print(prop)
+        except Exception as e:
+            print(f"Error scraping props: {e}")
+
+        browser.close()
 
 if __name__ == "__main__":
     scrape_fanduel_nba_points()
