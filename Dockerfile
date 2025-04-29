@@ -1,24 +1,18 @@
-# Use an official lightweight Python image
 FROM python:3.11-slim
 
-# Install system dependencies needed for Playwright
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     wget gnupg ca-certificates curl fonts-liberation libasound2 libatk-bridge2.0-0 libatk1.0-0 libcups2 \
-    libdbus-1-3 libgdk-pixbuf2.0-0 libx11-xcb1 libxcomposite1 libxdamage1 libxrandr2 \
-    libgbm1 libnss3 libpango-1.0-0 libpangocairo-1.0-0 libxss1 libxtst6 fonts-noto-color-emoji \
-    libxfixes3 libxkbcommon0  # ✅ <--- NEW required libraries
+    libdbus-1-3 libgdk-pixbuf2.0-0 libgtk-3-0 libx11-xcb1 libxcb1 libxcomposite1 libxdamage1 libxext6 \
+    libxfixes3 libxrandr2 libgbm1 libpango-1.0-0 libpangocairo-1.0-0 libatk1.0-0 libcairo2 libnss3 libxss1 \
+    libxtst6 libx11-6 libxkbcommon0 libxshmfence1 xvfb
 
-# Install Python packages
-RUN pip install --upgrade pip
-COPY requirements.txt requirements.txt
-RUN pip install -r requirements.txt
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# 📢 ADD THESE TWO LINES
-RUN playwright install
-RUN playwright install-deps  # ✅ <- THIS FIXES THE CURRENT ERROR
-
-# Copy app files
+# Copy app code
 COPY . .
 
-# Run app
+# Run your script
 CMD ["python", "fanduel_scraper.py"]
